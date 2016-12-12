@@ -882,6 +882,7 @@ config ARCH_ROCKCHIP
 	select DM
 	select SPL_DM if SPL
 	select SYS_MALLOC_F
+	select SPL_SEPARATE_BSS if SPL
 	select SPL_SYS_MALLOC_SIMPLE if SPL
 	select DM_GPIO
 	select DM_I2C

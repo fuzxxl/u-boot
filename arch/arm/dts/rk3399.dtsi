@@ -183,6 +183,7 @@
 	};
 
 	sdhci: sdhci@fe330000 {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-sdhci-5.1", "arasan,sdhci-5.1";
 		reg = <0x0 0xfe330000 0x0 0x10000>;
 		interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
@@ -416,6 +417,7 @@
 	};
 
 	pmugrf: syscon@ff320000 {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pmugrf", "syscon", "simple-mfd";
 		reg = <0x0 0xff320000 0x0 0x1000>;
 		#address-cells = <1>;
@@ -497,7 +499,26 @@
 		status = "disabled";
 	};
 
+	dfi: dfi@ff630000 {
+		reg = <0x00 0xff630000 0x00 0x4000>;
+		compatible = "rockchip,rk3399-dfi";
+		rockchip,pmu = <&pmugrf>;
+		clocks = <&cru PCLK_DDR_MON>;
+		clock-names = "pclk_ddr_mon";
+		status = "disabled";
+	};
+
+	dmc: dmc {
+		u-boot,dm-pre-reloc;
+		compatible = "rockchip,rk3399-dmc";
+		devfreq-events = <&dfi>;
+		interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH 0>;
+		clocks = <&cru SCLK_DDRCLK>;
+		clock-names = "dmc_clk";
+	};
+
 	pmucru: pmu-clock-controller@ff750000 {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pmucru";
 		reg = <0x0 0xff750000 0x0 0x1000>;
 		#clock-cells = <1>;
@@ -507,6 +528,7 @@
 	};
 
 	cru: clock-controller@ff760000 {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-cru";
 		reg = <0x0 0xff760000 0x0 0x1000>;
 		#clock-cells = <1>;
@@ -530,6 +552,7 @@
 	};
 
 	grf: syscon@ff770000 {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-grf", "syscon", "simple-mfd";
 		reg = <0x0 0xff770000 0x0 0x10000>;
 		#address-cells = <1>;
@@ -607,6 +630,7 @@
 	};
 
 	pinctrl: pinctrl {
+		u-boot,dm-pre-reloc;
 		compatible = "rockchip,rk3399-pinctrl";
 		rockchip,grf = <&grf>;
 		rockchip,pmu = <&pmugrf>;

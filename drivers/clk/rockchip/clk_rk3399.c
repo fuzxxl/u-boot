@@ -280,9 +280,9 @@ static void rkclk_set_pll(u32 *pll_con, const struct pll_div *div)
 	u32 vco_khz = OSC_HZ / 1000 * div->fbdiv / div->refdiv;
 	u32 output_khz = vco_khz / div->postdiv1 / div->postdiv2;
 
-	debug("PLL at %p: fbdiv=%d, refdiv=%d, postdiv1=%d, "
+	debug("PLL: fbdiv=%d, refdiv=%d, postdiv1=%d, "
 			   "postdiv2=%d, vco=%u khz, output=%u khz\n",
-			   pll_con, div->fbdiv, div->refdiv, div->postdiv1,
+			   div->fbdiv, div->refdiv, div->postdiv1,
 			   div->postdiv2, vco_khz, output_khz);
 	assert(vco_khz >= VCO_MIN_KHZ && vco_khz <= VCO_MAX_KHZ &&
 	       output_khz >= OUTPUT_MIN_KHZ && output_khz <= OUTPUT_MAX_KHZ &&
@@ -309,12 +309,16 @@ static void rkclk_set_pll(u32 *pll_con, const struct pll_div *div)
 		     (div->refdiv << PLL_REFDIV_SHIFT));
 
 	/* waiting for pll lock */
-	while (!(readl(&pll_con[2]) & (1 << PLL_LOCK_STATUS_SHIFT)))
-		udelay(1);
-
+	while (!(readl(&pll_con[2]) & (1 << PLL_LOCK_STATUS_SHIFT))){
+		debug("pll con2 0x%x %x\n", &pll_con[2], readl(&pll_con[2]));
+		udelay(1000);
+	}
+	
+	debug("pll lock\n");
 	/* pll enter normal mode */
 	rk_clrsetreg(&pll_con[3], PLL_MODE_MASK,
 		     PLL_MODE_NORM << PLL_MODE_SHIFT);
+	debug("pll switch to normal mode\n");
 }
 
 static int pll_para_config(u32 freq_hz, struct pll_div *div)
@@ -709,6 +713,45 @@ static ulong rk3399_mmc_set_clk(struct rk3399_cru *cru,
 	return rk3399_mmc_get_clk(cru, clk_id);
 }
 
+#define PMUSGRF_DDR_RGN_CON16 0xff330040
+static ulong rk3399_ddr_set_clk(struct rk3399_cru *cru,
+				ulong set_rate)
+{
+	struct pll_div dpll_cfg;
+
+	debug("%s\n", __func__);
+	/*  IC ECO bug, need to set this register */
+	writel(0xc000c000, PMUSGRF_DDR_RGN_CON16);
+
+	/*  clk_ddrc == DPLL = 24MHz / refdiv * fbdiv / postdiv1 / postdiv2 */
+	switch (set_rate) {
+	case 200*MHz:
+		dpll_cfg = (struct pll_div)
+		{.refdiv = 1, .fbdiv = 50, .postdiv1 = 6, .postdiv2 = 1};
+		break;
+	case 300*MHz:
+		dpll_cfg = (struct pll_div)
+		{.refdiv = 2, .fbdiv = 100, .postdiv1 = 4, .postdiv2 = 1};
+		break;
+	case 666*MHz:
+		dpll_cfg = (struct pll_div)
+		{.refdiv = 2, .fbdiv = 111, .postdiv1 = 2, .postdiv2 = 1};
+		break;
+	case 800*MHz:
+		dpll_cfg = (struct pll_div)
+		{.refdiv = 1, .fbdiv = 100, .postdiv1 = 3, .postdiv2 = 1};
+		break;
+	case 933*MHz:
+		dpll_cfg = (struct pll_div)
+		{.refdiv = 1, .fbdiv = 116, .postdiv1 = 3, .postdiv2 = 1};
+		break;
+	default:
+		error("Unsupported SDRAM frequency, add to clock.c!,%d\n", set_rate);
+	}
+	rkclk_set_pll(&cru->dpll_con[0], &dpll_cfg);
+
+	return set_rate;
+}
 static ulong rk3399_clk_get_rate(struct clk *clk)
 {
 	struct rk3399_clk_priv *priv = dev_get_priv(clk->dev);
@@ -744,6 +787,7 @@ static ulong rk3399_clk_set_rate(struct clk *clk, ulong rate)
 	struct rk3399_clk_priv *priv = dev_get_priv(clk->dev);
 	ulong ret = 0;
 
+	debug("%s %d\n", __func__, rate);
 	switch (clk->id) {
 	case 0 ... 63:
 		return 0;
@@ -763,6 +807,9 @@ static ulong rk3399_clk_set_rate(struct clk *clk, ulong rate)
 	case DCLK_VOP1:
 		ret = rk3399_vop_set_clk(priv->cru, clk->id, rate);
 		break;
+	case SCLK_DDRCLK:
+		ret = rk3399_ddr_set_clk(priv->cru, rate);
+		break;
 	default:
 		return -ENOENT;
 	}
@@ -779,8 +826,10 @@ static int rk3399_clk_probe(struct udevice *dev)
 {
 	struct rk3399_clk_priv *priv = dev_get_priv(dev);
 
+	debug("%s in\n", __func__);
 	rkclk_init(priv->cru);
 
+	debug("%s done\n", __func__);
 	return 0;
 }
 
@@ -802,6 +851,7 @@ static int rk3399_clk_bind(struct udevice *dev)
 	if (ret)
 		printf("Warning: No RK3399 reset driver: ret=%d\n", ret);
 
+	debug("%s done\n", __func__);
 	return 0;
 }
 
@@ -933,13 +983,11 @@ static struct clk_ops rk3399_pmuclk_ops = {
 static void pmuclk_init(struct rk3399_pmucru *pmucru)
 {
 	u32 pclk_div;
-
 	/*  configure pmu pll(ppll) */
 	rkclk_set_pll(&pmucru->ppll_con[0], &ppll_init_cfg);
 
 	/*  configure pmu pclk */
 	pclk_div = PPLL_HZ / PMU_PCLK_HZ - 1;
-	assert((pclk_div + 1) * PMU_PCLK_HZ == PPLL_HZ && pclk_div < 0x1f);
 	rk_clrsetreg(&pmucru->pmucru_clksel[0],
 		     PMU_PCLK_DIV_CON_MASK,
 		     pclk_div << PMU_PCLK_DIV_CON_SHIFT);
