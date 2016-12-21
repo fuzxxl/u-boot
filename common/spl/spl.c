@@ -25,7 +25,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #endif
 #ifndef CONFIG_SYS_MONITOR_LEN
 /* Unknown U-Boot size, let's assume it will not be more than 200 KB */
-#define CONFIG_SYS_MONITOR_LEN	(200 * 1024)
+#define CONFIG_SYS_MONITOR_LEN	(2000 * 1024)
 #endif
 
 u32 *boot_params_ptr = NULL;
@@ -388,6 +388,10 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 #if defined(CONFIG_SYS_MALLOC_F_LEN) && !defined(CONFIG_SYS_SPL_MALLOC_SIZE)
 	debug("SPL malloc() used %#lx bytes (%ld KB)\n", gd->malloc_ptr,
 	      gd->malloc_ptr / 1024);
+#endif
+
+#ifdef CONFIG_SPL_ATF_SUPPORT
+	bl31_entry();
 #endif
 
 	debug("loaded - jumping to U-Boot...");

@@ -34,7 +34,6 @@
 /*  BSS setup */
 #define CONFIG_SPL_BSS_START_ADDR       0xff8e0000
 #define CONFIG_SPL_BSS_MAX_SIZE         0x10000
-
 #define CONFIG_SYS_BOOTM_LEN	(64 << 20)	/* 64M */
 
 /* MMC/SD IP block */
@@ -53,6 +52,7 @@
 
 /* RAW SD card / eMMC locations. */
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	(128 << 10)
+
 
 /* FAT sd card locations. */
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1

@@ -41,6 +41,7 @@ config SPL_STACK_R_ADDR
 	  Specify the address in SDRAM for the SPL stack. This will be set up
 	  before board_init_r() is called.
 
+
 config SPL_STACK_R_MALLOC_SIMPLE_LEN
 	depends on SPL_STACK_R && SPL_SYS_MALLOC_SIMPLE
 	hex "Size of malloc_simple heap after switching to DRAM SPL stack"
@@ -576,6 +577,24 @@ config SPL_YMODEM_SUPPORT
 	  there is no other option. The Ymodem protocol provides a reliable
 	  means of transmitting U-Boot over a serial line for using in SPL,
 	  with a checksum to ensure correctness.
+
+config SPL_ATF_SUPPORT
+	bool "Support ARM trust firmware"
+	depends on SPL
+	help
+	  Later
+
+config SYS_MMCSD_RAW_MODE_ATF_SECTOR
+	depends on SPL_ATF_SUPPORT
+	hex "ATF offset in MMC"
+	help
+	  none
+
+config SPL_ATF_TEXT_BASE
+	depends on SPL_ATF_SUPPORT
+	hex "ATF TEXT BASE addr"
+	help
+	  none
 
 config TPL_ENV_SUPPORT
 	bool "Support an environment"
