@@ -1,0 +1,41 @@
+/*
+ * Simple U-boot uImage source file containing a single kernel and FDT blob
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Simple image with single ATF bl31";
+	#address-cells = <1>;
+
+	images {
+		uboot@1 {
+			description = "U-Boot (64-bit)";
+			data = /incbin/("u-boot.bin");
+			type = "standalone";
+			arch = "arm64";
+			compression = "none";
+			load = <0x00200000>;
+			entry = <0x00200000>;
+		};
+		atf@1 {
+			description = "ARM Trusted Firmware";
+			data = /incbin/("./bl31.bin");
+			data-offset = <0x0200>;
+			type = "firmware";
+			arch = "arm64";
+			compression = "none";
+			load = <0x000010000>;
+			entry = <0x000010000>;
+		};
+	};
+
+	configurations {
+		default = "conf@1";
+		conf@1 {
+			description = "RK3399 evb";
+			Uboot = "uboot@1";
+			loadables = "atf@1";
+		};
+	};
+};
