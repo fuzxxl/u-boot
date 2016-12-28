@@ -253,7 +253,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	/* Load the image and set up the spl_image structure */
 	spl_load_fit_image(info, sector, fit, base_offset, node, spl_image);
 	spl_image->os = IH_OS_U_BOOT;
-
+#if 0
 	/* Figure out which device tree the board wants to use */
 	node = spl_fit_get_image_node(fit, images, FIT_FDT_PROP, 0);
 	if (node < 0) {
@@ -268,6 +268,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	image_info.load_addr = spl_image->load_addr + spl_image->size;
 	image_info.load_addr = (image_info.load_addr + align_len) & ~align_len;
 	spl_load_fit_image(info, sector, fit, base_offset, node, &image_info);
+#endif
 
 	/* Now check if there are more images for us to load */
 	for (i = 1; ; i++) {
